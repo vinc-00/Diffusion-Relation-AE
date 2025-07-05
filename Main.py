@@ -23,12 +23,20 @@ import random
 import numpy as np
 import os
 from time import time
-import utils
-import My_Dataset
-import Model
-import Train
-import Test
+from utils import generate_and_plot, show_generated
+from My_Dataset import MNISTTwoDigitDataset
+from Model import UNet, q_sample, p_sample, ResidualBlock, TimeEmbedding
+from Train import train_diffusion
+from Test import test_model
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+T = 1000  # diffusion steps
+beta = torch.linspace(1e-4, 0.02, T).to(device)
+alpha = 1. - beta
+alpha_hat = torch.cumprod(alpha, dim=0).to(device)
+SAVE_DIR = "diffusion_model_weights"
+os.makedirs(SAVE_DIR, exist_ok=True)
 
 test_dataset = datasets.MNIST(root='./data', train=False, download=True)
 test_relation_dataset = MNISTTwoDigitDataset(test_dataset, train=False)
