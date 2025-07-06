@@ -23,8 +23,8 @@ import random
 import numpy as np
 import os
 from time import time
-import utils
-import My_Dataset
+from utils import generate_and_plot, show_generated
+from My_Dataset import MNISTTwoDigitDataset
 
 # Time Embedding
 class TimeEmbedding(nn.Module):

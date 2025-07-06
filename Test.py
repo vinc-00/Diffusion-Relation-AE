@@ -24,8 +24,8 @@ import numpy as np
 import os
 from time import time
 import utils
-import My_Dataset
-import Model
+from My_Dataset import MNISTTwoDigitDataset
+from Model import UNet, q_sample, p_sample, ResidualBlock, TimeEmbedding
 
 @torch.no_grad()
 def test_model(model, test_loader, alpha_hybrid=0.8):

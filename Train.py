@@ -23,9 +23,9 @@ import random
 import numpy as np
 import os
 from time import time
-import utils
-import My_Dataset
-import Model
+from utils import generate_and_plot, show_generated
+from My_Dataset import MNISTTwoDigitDataset
+from Model import UNet, q_sample, p_sample, ResidualBlock, TimeEmbedding
 
 
 def train_diffusion(epochs=20, lr=1e-4, patience=10, alpha_hybrid=0.8, samples_per_pair=400):
