@@ -29,6 +29,13 @@ from Model import UNet, q_sample, p_sample, ResidualBlock, TimeEmbedding
 
 
 def train_diffusion(epochs=20, lr=1e-4, patience=10, alpha_hybrid=0.8, samples_per_pair=400):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    T = 1000  # diffusion steps
+    beta = torch.linspace(1e-4, 0.02, T).to(device)
+    alpha = 1. - beta
+    alpha_hat = torch.cumprod(alpha, dim=0).to(device)
+    SAVE_DIR = "diffusion_model_weights"
+    os.makedirs(SAVE_DIR, exist_ok=True)
     # Prepare datasets
     full_dataset = datasets.MNIST(root='./data', train=True, download=True)
     test_dataset = datasets.MNIST(root='./data', train=False, download=True)

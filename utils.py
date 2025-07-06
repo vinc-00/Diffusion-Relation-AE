@@ -23,6 +23,7 @@ import random
 import numpy as np
 import os
 from time import time
+from Model import p_sample, q_sample
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 T = 1000  # diffusion steps
@@ -34,6 +35,7 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 
 @torch.no_grad()
 def show_generated(model, loader, epoch):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
     x, relation, target = next(iter(loader))
     x, relation = x[:4].to(device), relation[:4].to(device)
@@ -74,6 +76,7 @@ def show_generated(model, loader, epoch):
 
 @torch.no_grad()
 def generate_and_plot(model, number, relation, device):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
 
     # Create the input image for the given number

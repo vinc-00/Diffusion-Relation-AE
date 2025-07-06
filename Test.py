@@ -23,13 +23,18 @@ import random
 import numpy as np
 import os
 from time import time
-import utils
+from utils import show_generated
 from My_Dataset import MNISTTwoDigitDataset
 from Model import UNet, q_sample, p_sample, ResidualBlock, TimeEmbedding
 
 @torch.no_grad()
 def test_model(model, test_loader, alpha_hybrid=0.8):
     model.eval()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    T = 1000  # diffusion steps
+    beta = torch.linspace(1e-4, 0.02, T).to(device)
+    alpha = 1. - beta
+    alpha_hat = torch.cumprod(alpha, dim=0).to(device)
     total_loss = 0.0
     total_noise_loss = 0.0
     total_recon_loss = 0.0
