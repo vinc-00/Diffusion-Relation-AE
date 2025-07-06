@@ -23,7 +23,6 @@ import random
 import numpy as np
 import os
 from time import time
-from Model import p_sample, q_sample
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 T = 1000  # diffusion steps
@@ -32,6 +31,50 @@ alpha = 1. - beta
 alpha_hat = torch.cumprod(alpha, dim=0).to(device)
 SAVE_DIR = "diffusion_model_weights"
 os.makedirs(SAVE_DIR, exist_ok=True)
+
+
+# Diffusion Functions
+def q_sample(x_0, t, noise=None):
+    """Forward diffusion process"""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    T = 1000  # diffusion steps
+    beta = torch.linspace(1e-4, 0.02, T).to(device)
+    alpha = 1. - beta
+    alpha_hat = torch.cumprod(alpha, dim=0).to(device)
+    if noise is None:
+        noise = torch.randn_like(x_0)
+    sqrt_alpha_hat_t = torch.sqrt(alpha_hat[t])[:, None, None, None]
+    sqrt_one_minus_alpha_hat_t = torch.sqrt(1 - alpha_hat[t])[:, None, None, None]
+    return sqrt_alpha_hat_t * x_0 + sqrt_one_minus_alpha_hat_t * noise, noise
+
+@torch.no_grad()
+def p_sample(model, x_cond, relation, shape):
+    """Reverse diffusion sampling"""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    x = torch.randn(shape, device=device)
+    T = 1000  # diffusion steps
+    beta = torch.linspace(1e-4, 0.02, T).to(device)
+    alpha = 1. - beta
+    alpha_hat = torch.cumprod(alpha, dim=0).to(device)
+    for t_step in reversed(range(T)):
+        t = torch.full((shape[0],), t_step, device=device, dtype=torch.long)
+        z = torch.randn_like(x) if t_step > 0 else 0
+
+        # Predict noise
+        pred_noise = model(x, x_cond, t, relation)
+
+        # Compute coefficients
+        alpha_t = alpha[t][:, None, None, None]
+        alpha_hat_t = alpha_hat[t][:, None, None, None]
+        beta_t = beta[t][:, None, None, None]
+
+        # Update x
+        x = (1 / torch.sqrt(alpha_t)) * (
+            x - ((1 - alpha_t) / torch.sqrt(1 - alpha_hat_t)) * pred_noise
+        ) + torch.sqrt(beta_t) * z
+
+    return x
+
 
 @torch.no_grad()
 def show_generated(model, loader, epoch):

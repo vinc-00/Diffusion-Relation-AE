@@ -23,9 +23,9 @@ import random
 import numpy as np
 import os
 from time import time
-from utils import show_generated
+from utils import generate_and_plot, show_generated, q_sample, p_sample
 from My_Dataset import MNISTTwoDigitDataset
-from Model import UNet, q_sample, p_sample, ResidualBlock, TimeEmbedding
+from Model import UNet, ResidualBlock, TimeEmbedding
 
 @torch.no_grad()
 def test_model(model, test_loader, alpha_hybrid=0.8):

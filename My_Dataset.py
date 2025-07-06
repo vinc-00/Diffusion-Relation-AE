@@ -23,7 +23,7 @@ import random
 import numpy as np
 import os
 from time import time
-from utils import generate_and_plot, show_generated
+from utils import generate_and_plot, show_generated, q_sample, p_sample
 
 
 class MNISTTwoDigitDataset(Dataset):
