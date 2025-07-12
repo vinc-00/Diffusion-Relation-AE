@@ -55,7 +55,7 @@ def train_diffusion(epochs=20, lr=1e-4, patience=10, alpha_hybrid=0.8, samples_p
 
     # Initialize model
     model = UNet().to(device)
-    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
+    optimizer = optim.AdamW(model.parameters(), lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
 
     best_val_loss = float('inf')
