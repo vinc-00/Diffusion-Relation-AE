@@ -38,31 +38,9 @@ alpha_hat = torch.cumprod(alpha, dim=0).to(device)
 SAVE_DIR = "diffusion_model_weights"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-test_dataset = datasets.MNIST(root='./data', train=False, download=True)
-test_relation_dataset = MNISTTwoDigitDataset(test_dataset, train=False)
-test_loader = DataLoader(test_relation_dataset, batch_size=32, shuffle=False)
+train_diffusion(epochs=400, lr=1e-4, patience=20, model_name='new_DAE')
 
-train_diffusion(epochs=40, patience=10)
+train_diffusion(epochs=400, lr=0.00005, patience=20, model_name='new_DAE_2')
 
-model = UNet().to(device)
-model.load_state_dict(torch.load(os.path.join(SAVE_DIR, "best_model.pth")))
-model.eval()
+train_diffusion(epochs=400, lr=0.0005, patience=20, model_name='new_DAE_3')
 
-test_model(model, test_loader)
-
-print("\nGenerating custom examples...")
-
-print("Generating successor of 42...")
-generate_and_plot(model, 42, 1, device)
-print("Generating predecessor of 42...")
-generate_and_plot(model, 42, 0, device)
-
-print("Generating +12 for 42...")
-generate_and_plot(model, 42, 2, device)
-print("Generating -12 for 42...")
-generate_and_plot(model, 42, 3, device)
-
-print("Generating +12 for 90 (should wrap to 2)...")
-generate_and_plot(model, 90, 2, device)
-print("Generating -12 for 5 (should wrap to 93)...")
-generate_and_plot(model, 5, 3, device)

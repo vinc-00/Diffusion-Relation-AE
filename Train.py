@@ -28,7 +28,7 @@ from My_Dataset import MNISTTwoDigitDataset
 from Model import UNet, ResidualBlock, TimeEmbedding
 
 
-def train_diffusion(epochs=20, lr=1e-4, patience=10, alpha_hybrid=0.8, samples_per_pair=400):
+def train_diffusion(epochs=20, lr=1e-4, patience=10, alpha_hybrid=0.8, samples_per_pair=400, model_name='DAE.pth'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     T = 1000  # diffusion steps
     beta = torch.linspace(1e-4, 0.02, T).to(device)
@@ -185,7 +185,7 @@ def train_diffusion(epochs=20, lr=1e-4, patience=10, alpha_hybrid=0.8, samples_p
         if epoch_val_loss < best_val_loss:
             best_val_loss = epoch_val_loss
             epochs_no_improve = 0
-            torch.save(model.state_dict(), os.path.join(SAVE_DIR, "best_model.pth"))
+            torch.save(model.state_dict(), os.path.join(SAVE_DIR, model_name))
             print(f"  Saved new best model with val loss: {best_val_loss:.5f}")
         else:
             epochs_no_improve += 1
