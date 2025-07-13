@@ -38,9 +38,9 @@ alpha_hat = torch.cumprod(alpha, dim=0).to(device)
 SAVE_DIR = "diffusion_model_weights"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-train_diffusion(epochs=400, lr=1e-4, patience=20, model_name='new_DAE')
+train_diffusion(epochs=400, lr=1e-4, patience=20, model_name='new_DAE.pt')
 
-train_diffusion(epochs=400, lr=0.00005, patience=20, model_name='new_DAE_2')
+train_diffusion(epochs=400, lr=0.00005, patience=20, model_name='new_DAE_2.pt')
 
-train_diffusion(epochs=400, lr=0.0005, patience=20, model_name='new_DAE_3')
+train_diffusion(epochs=400, lr=0.0005, patience=20, model_name='new_DAE_3.pt')
 
