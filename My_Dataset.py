@@ -109,3 +109,4 @@ class MNISTTwoDigitDataset(Dataset):
         target_tensor = (target_tensor - 0.5) / 0.5  # Normalize to [-1,1]
 
         return condition_tensor, torch.tensor(relation, dtype=torch.long), target_tensor
+    

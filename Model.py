@@ -91,7 +91,7 @@ class UNet(nn.Module):
             nn.SiLU(),
             nn.Linear(emb_dim, emb_dim)
         )
-        self.relation_embed = nn.Embedding(4, emb_dim)
+        self.relation_embed = nn.Embedding(5, emb_dim)
 
 
         self.enc1 = ResidualBlock(2, 64, emb_dim)
