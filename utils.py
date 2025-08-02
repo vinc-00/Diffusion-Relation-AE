@@ -105,41 +105,56 @@ def p_sample(model, x_cond, relation, shape):
     return x
 '''
 
+
 @torch.no_grad()
 def show_generated(model, loader, epoch):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
-    x, relation, target = next(iter(loader))
-    x, relation = x[:4].to(device), relation[:4].to(device)
+    batch = next(iter(loader))
 
-    # Generate images (32x64)
+    x = batch['condition'][:4].to(device)
+    relation = batch['relation'][:4].to(device)
+    target = batch['target'][:4].to(device)
+    is_valid = batch['is_valid'][:4].to(device)
+
     gen = p_sample(model, x, relation, shape=(4, 1, 32, 64)).cpu().clamp(-1, 1)
 
     def process_image(tensor):
-        tensor = tensor[:, :, 2:-2, 4:-4]
-        return (tensor * 0.5) + 0.5
+        """Remove padding and normalize from [-1,1] to [0,1]"""
+        tensor = tensor[:, :, 2:-2, 4:-4]  # Remove padding
+        return (tensor * 0.5) + 0.5 
 
     x_processed = process_image(x.cpu())
     target_processed = process_image(target.cpu())
     gen_processed = process_image(gen)
 
     fig, axes = plt.subplots(3, 4, figsize=(16, 12))
+
+    rel_names = {0: "predecessor (-1)",
+                 1: "successor (+1)",
+                 2: "-12",
+                 3: "+12",
+                 4: "-51",
+                 5: "+51"}
+
     for i in range(4):
-        axes[0, i].imshow(x_processed[i].squeeze(), cmap='gray')
+        axes[0, i].imshow(x_processed[i].squeeze(), cmap='gray', vmin=0, vmax=1)
 
-        axes[1, i].imshow(target_processed[i].squeeze(), cmap='gray')
+        target_img = target_processed[i].squeeze()
+        if not is_valid[i]:
+            target_img = torch.zeros_like(target_img)
+        axes[1, i].imshow(target_img, cmap='gray', vmin=0, vmax=1)
 
-        axes[2, i].imshow(gen_processed[i].squeeze(), cmap='gray')
+        axes[2, i].imshow(gen_processed[i].squeeze(), cmap='gray', vmin=0, vmax=1)
 
-        # Set titles
         if i == 0:
             axes[0, i].set_ylabel("Input", fontsize=12)
             axes[1, i].set_ylabel("Target", fontsize=12)
             axes[2, i].set_ylabel("Generated", fontsize=12)
 
-        # Update relation labels for new types
-        rel_type = ["predecessor", "successor", "+12", "-12"][relation[i].item()]
-        axes[0, i].set_title(f"Relation: {rel_type}", fontsize=10)
+        rel_type = rel_names[relation[i].item()]
+        src_num = batch['src_num'][i].item()
+        tgt_num = batch['tgt_num'][i].item() if is_valid[i] else "Invalid"
+        axes[0, i].set_title(f"{src_num} → {tgt_num}\nRelation: {rel_type}", fontsize=10)
 
     plt.suptitle(f"Epoch {epoch} - Generated Number Relations", fontsize=14)
     plt.tight_layout()
@@ -148,16 +163,13 @@ def show_generated(model, loader, epoch):
 
 @torch.no_grad()
 def generate_and_plot(model, number, relation, device):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
 
-    # Create the input image for the given number
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    # Load MNIST dataset for digit images
     mnist_dataset = datasets.MNIST(root='./data', train=False, download=True)
     digit_to_indices = {}
     for i in range(10):
@@ -171,19 +183,17 @@ def generate_and_plot(model, number, relation, device):
     second_idx = random.choice(digit_to_indices[second_digit])
     second_img, _ = mnist_dataset[second_idx]
 
-    # Concatenate images horizontally
-    width = first_img.width + second_img.width
-    height = max(first_img.height, second_img.height)
-    input_img = first_img.copy()
-    input_img = input_img.resize((width, height))
-    input_img.paste(second_img, (first_img.width, 0))
+    input_img = Image.new('L', (64, 32))
 
-    # Pad and normalize
-    padded_img = transforms.Pad((16, 2, 16, 2))(input_img)
-    input_tensor = transform(padded_img).unsqueeze(0).to(device)
+    first_pos = (16 - first_img.width // 2, 16 - first_img.height // 2)
+    second_pos = (48 - second_img.width // 2, 16 - second_img.height // 2)
+
+    input_img.paste(first_img, first_pos)
+    input_img.paste(second_img, second_pos)
+
+    input_tensor = transform(input_img).unsqueeze(0).to(device)
     relation_tensor = torch.tensor([relation], device=device, dtype=torch.long)
 
-    # Generate image
     generated = p_sample(
         model,
         input_tensor,
@@ -193,7 +203,7 @@ def generate_and_plot(model, number, relation, device):
 
     def process_image(tensor):
         tensor = (tensor * 0.5) + 0.5
-        return tensor[:, :, 4:-4, 2:-2].squeeze()
+        return tensor.squeeze()
 
     input_display = process_image(input_tensor.cpu())
     generated_display = process_image(generated)
@@ -210,6 +220,9 @@ def generate_and_plot(model, number, relation, device):
     elif relation == 3:
         target_number = (number - 12) % 100
         rel_str = "-12"
+    else:
+        target_number = 0
+        rel_str = 'Unknown'
 
     # Plot
     fig, ax = plt.subplots(1, 2, figsize=(12, 6))

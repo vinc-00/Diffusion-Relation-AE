@@ -30,14 +30,8 @@ from Model import UNet, ResidualBlock, TimeEmbedding
 @torch.no_grad()
 def test_model(model, test_loader, alpha_hybrid=0.8):
     model.eval()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    T = 1000  # diffusion steps
-    beta = torch.linspace(1e-4, 0.02, T).to(device)
-    alpha = 1. - beta
-    alpha_hat = torch.cumprod(alpha, dim=0).to(device)
     total_loss = 0.0
     total_noise_loss = 0.0
-    total_recon_loss = 0.0
     total_psnr = 0.0
     num_samples = 0
 
@@ -59,29 +53,23 @@ def test_model(model, test_loader, alpha_hybrid=0.8):
         sqrt_one_minus_alpha_hat_t = torch.sqrt(1 - alpha_hat[timesteps])[:, None, None, None]
         pred_x0 = (x_t - sqrt_one_minus_alpha_hat_t * pred_noise) / sqrt_alpha_hat_t
 
-        # Calculate losses
         noise_loss = F.mse_loss(pred_noise, noise, reduction='none')
         noise_loss = noise_loss.view(5, batch_size, *noise_loss.shape[1:]).mean(dim=[2, 3, 4])
 
-        recon_loss = F.mse_loss(pred_x0, target_rep, reduction='none')
-        recon_loss = recon_loss.view(5, batch_size, *recon_loss.shape[1:]).mean(dim=[2, 3, 4])
 
-        loss = alpha_hybrid * noise_loss + (1 - alpha_hybrid) * recon_loss
+        loss = noise_loss
 
         total_loss += loss.sum().item()
         total_noise_loss += noise_loss.sum().item()
-        total_recon_loss += recon_loss.sum().item()
 
         if 0 in timesteps:
             zero_idx = (timesteps == 0)
             zero_x = batch_rep[zero_idx][:batch_size]
             zero_relation = relation_rep[zero_idx][:batch_size]
 
-            # Generate images
             generated = p_sample(model, zero_x, zero_relation, shape=(batch_size, 1, 32, 64))
 
 
-            # Calculate PSNR
             mse = F.mse_loss(generated, target, reduction='none')
             mse = mse.view(batch_size, -1).mean(dim=1)
             psnr = 20 * torch.log10(1.0 / torch.sqrt(mse))
@@ -91,16 +79,13 @@ def test_model(model, test_loader, alpha_hybrid=0.8):
         if (batch_idx + 1) % 10 == 0:
             print(f"  Processed {batch_idx+1} batches...")
 
-    # Calculate metrics
     avg_loss = total_loss / (len(test_loader.dataset) * 5)
     avg_noise_loss = total_noise_loss / (len(test_loader.dataset) * 5)
-    avg_recon_loss = total_recon_loss / (len(test_loader.dataset) * 5)
     avg_psnr = total_psnr / num_samples
 
     print("\nTest Results:")
     print(f"  Total Loss: {avg_loss:.5f}")
     print(f"  Noise Loss: {avg_noise_loss:.5f}")
-    print(f"  Recon Loss: {avg_recon_loss:.5f}")
     print(f"  Average PSNR: {avg_psnr:.2f} dB")
 
     show_generated(model, test_loader, "final_test")

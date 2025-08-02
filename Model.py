@@ -26,7 +26,6 @@ from time import time
 from utils import generate_and_plot, show_generated, q_sample, p_sample
 from My_Dataset import MNISTTwoDigitDataset
 
-# Time Embedding
 class TimeEmbedding(nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -58,7 +57,6 @@ class ResidualBlock(nn.Module):
         else:
             self.shortcut = nn.Identity()
 
-        # Embedding projection
         self.emb_proj = nn.Sequential(
             nn.SiLU(),
             nn.Linear(emb_dim, 2 * out_c)
@@ -69,7 +67,6 @@ class ResidualBlock(nn.Module):
         h = self.norm1(h)
         h = self.act(h)
 
-        # Process embedding
         emb_out = self.emb_proj(emb)
         scale, shift = emb_out.chunk(2, dim=1)
         h = h * (1 + scale[:, :, None, None]) + shift[:, :, None, None]
@@ -78,20 +75,20 @@ class ResidualBlock(nn.Module):
         h = self.norm2(h)
         h = self.dropout(h)
         return h + self.shortcut(x)
+        
 
 class UNet(nn.Module):
     def __init__(self, in_channels=1, out_channels=1, emb_dim=128):
         super().__init__()
         self.emb_dim = emb_dim
 
-        # Time and relation embedding
         self.time_mlp = nn.Sequential(
             TimeEmbedding(emb_dim),
             nn.Linear(emb_dim, emb_dim),
             nn.SiLU(),
             nn.Linear(emb_dim, emb_dim)
         )
-        self.relation_embed = nn.Embedding(5, emb_dim)
+        self.relation_embed = nn.Embedding(8, emb_dim)
 
 
         self.enc1 = ResidualBlock(2, 64, emb_dim)
@@ -117,18 +114,16 @@ class UNet(nn.Module):
         rel_emb = self.relation_embed(relation)
         total_emb = t_emb + rel_emb
 
-        # Combine input with condition image
         x = torch.cat([x, cond_img], dim=1)
 
-        # Encoder with skip connections
-        e1 = self.enc1(x, total_emb)        # 64x32
-        e2 = self.enc2(self.down(e1), total_emb)  # 32x16
-        e3 = self.enc3(self.down(e2), total_emb)  # 16x8
-        e4 = self.enc4(self.down(e3), total_emb)  # 8x4
+        e1 = self.enc1(x, total_emb)
+        e2 = self.enc2(self.down(e1), total_emb)
+        e3 = self.enc3(self.down(e2), total_emb)
+        e4 = self.enc4(self.down(e3), total_emb)
 
 
-        e4_pooled = self.adaptive_pool(e4)  # Ensure 4x2
-        m = self.mid(self.down(e4_pooled), total_emb)  # 4x2 -> 2x1
+        e4_pooled = self.adaptive_pool(e4)
+        m = self.mid(self.down(e4_pooled), total_emb)
 
 
         m_up = F.interpolate(m, size=e4_pooled.size()[2:], mode='bilinear', align_corners=True)
@@ -143,4 +138,5 @@ class UNet(nn.Module):
         d1 = self.dec1(torch.cat([d2_up, e1], dim=1), total_emb)
 
         return self.out_conv(d1)
+
 
