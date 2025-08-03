@@ -28,7 +28,7 @@ from My_Dataset import MNISTTwoDigitDataset
 from Model import UNet, ResidualBlock, TimeEmbedding
 
 
-def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_versione_DAE.pt'):
+def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_versione_DAE.pt', v_samples_per_pair=400):
     full_dataset = datasets.MNIST(root='./data', train=True, download=True)
     test_dataset = datasets.MNIST(root='./data', train=False, download=True)
 
@@ -40,7 +40,7 @@ def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_v
 
     train_dataset = MNISTTwoDigitDataset(
         mnist_data=train_subset,
-        samples_per_pair=samples_per_pair,
+        samples_per_pair=v_samples_per_pair,
         train=True,
         min_num=0,
         max_num=99,
@@ -49,7 +49,7 @@ def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_v
 
     val_dataset = MNISTTwoDigitDataset(
         mnist_data=val_subset,
-        samples_per_pair=samples_per_pair,
+        samples_per_pair=v_samples_per_pair,
         train=True,
         min_num=0,
         max_num=99,
