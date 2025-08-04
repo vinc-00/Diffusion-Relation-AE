@@ -160,7 +160,7 @@ def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_v
         scheduler.step(epoch_val_loss)
 
         elapsed = time() - start_time
-        print(f"Epoch {epoch}/{epochs} - {elapsed:.1f}s")
+        print(f"Epoch {epoch}/{v_epochs} - {elapsed:.1f}s")
         print(f"  Train Loss: {epoch_train_loss:.5f} (Noise: {epoch_train_noise_loss:.5f})")
         print(f"  Val Loss:   {epoch_val_loss:.5f} (Noise: {epoch_val_noise_loss:.5f})")
         print(f"  LR: {optimizer.param_groups[0]['lr']:.7f}")
@@ -176,39 +176,7 @@ def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_v
             if epochs_no_improve >= patience:
                 early_stop = True
 
-        if epoch % 5 == 0 or epoch == epochs or early_stop:
-            test_vis_dataset = MNISTTwoDigitDataset(
-                mnist_data=test_dataset,
-                samples_per_pair=4,
-                train=False,
-                min_num=0,
-                max_num=99,
-                relations=[-1, 1, -12, 12, -51, 51]
-            )
-            test_vis_loader = DataLoader(test_vis_dataset, batch_size=4, shuffle=True)
-            show_generated(model, test_vis_loader, epoch)
 
     print("Training complete.")
 
-    plt.figure(figsize=(12, 8))
-
-    plt.subplot(2, 1, 1)
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(val_losses, label='Validation Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Total Loss')
-    plt.title('Training and Validation Total Loss')
-    plt.legend()
-
-    plt.subplot(2, 1, 2)
-    plt.plot(train_noise_losses, label='Train Noise Loss', linestyle='--')
-    plt.plot(val_noise_losses, label='Val Noise Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Component Loss')
-    plt.title('Component Losses')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_DIR, "loss_curves.png"))
-    plt.show()
     return model
