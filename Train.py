@@ -172,8 +172,8 @@ def train_diffusion(v_epochs=400, v_lr=1e-4, v_patience=25, v_model_name='Last_v
             print(f"  Saved new best model with val loss: {best_val_loss:.5f}")
         else:
             epochs_no_improve += 1
-            print(f"  No improvement for {epochs_no_improve}/{patience} epochs")
-            if epochs_no_improve >= patience:
+            print(f"  No improvement for {epochs_no_improve}/{v_patience} epochs")
+            if epochs_no_improve >= v_patience:
                 early_stop = True
 
 
